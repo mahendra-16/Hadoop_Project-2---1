@@ -1,0 +1,49 @@
+a = load '/pigtest/StatewiseDistrictwisePhysicalProgress.xml' using org.apache.pig.piggybank.storage.XMLLoader('row') as (doc:chararray);
+
+b = foreach a generate REPLACE(doc, '[\\n]', '') as doc;
+
+c = foreach b generate REGEX_EXTRACT_ALL(doc, '.*(?:<State_Name>)([^<]*).*(?:<Distric_Name>)([^<]*).*(?:<Project_Objectives_IHHL_BPL>)([^<]*).*(?:<Project_Objectives_IHHL_APL>)([^<]*).*');
+
+d = foreach c generate FLATTEN($0);
+
+e = filter d by $3==$2;
+
+dump e;
+
+store d into '/pigtest/Result' using PigStorage(',');	
+
+## create a table in mysql
+ 
+create table RESULT(state varchar(30), District varchar(30), BPL_obj int, BPL_ACH int);
+
+## export result using sqoop
+
+sqoop export --connect jdbc:mysql://localhost/test --table RESULT --fields-terminated-by '*' --export-dir /pigtest/Result/part-m-00000;
+
+select * from Result;
+
+
+b)
+a = load '/pigtest/StatewiseDistrictwisePhysicalProgress.xml' using org.apache.pig.piggybank.storage.XMLLoader('row') as (doc:chararray);
+
+b = foreach a generate REPLACE(doc, '[\\n]', '') as doc;
+
+c = foreach b generate REGEX_EXTRACT_ALL(doc, '.*(?:<State_Name>)([^<]*).*(?:<Distric_Name>)([^<]*).*(?:<Project_Objectives_IHHL_BPL>)([^<]*).*(?:<Project_Objectives_IHHL_APL>)([^<]*).*');
+
+d = foreach c generate FLATTEN($0);
+
+dump d;
+
+store d into '/pigtest/Parsed_data' using PigStorage(',');	
+
+## MySQL
+create table Result_80(District varchar(30));
+
+##Export using sqoop
+sqoop export --connect jdbc:mysql://localhost/test --table RESULT_80 --fields-terminated-by ',' --export-dir /pigtest/Result_80/part-m-00000;
+
+select * from Result_80;
+
+
+
+
